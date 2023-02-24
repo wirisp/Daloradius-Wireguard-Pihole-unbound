@@ -1,6 +1,3 @@
-# Daloradius-Wireguard-Pihole-unbound
-Instalacion de Daloradius + Wireguard + Pihole+ unbound
-
 #Wireguard+pihole+daloradius debian 11
 #Activar ipv6 en contabo
 enable_ipv6
@@ -19,6 +16,7 @@ nano authorized_keys
 chmod 600 ~/.ssh/authorized_keys && chmod 700 ~/.ssh/
 apt update
 apt -y install software-properties-common gnupg2 dirmngr
+#apt-get install wget curl net-tools gamin
 apt -y upgrade
 reboot
 apt install software-properties-common dirmngr -y
@@ -46,8 +44,9 @@ mysql -u root -p radius < etc/freeradius/3.0/mods-config/sql/main/mysql/schema.s
 ln -s etc/freeradius/3.0/mods-available/sql etc/freeradius/3.0/mods-enabled/
 nano etc/freeradius/3.0/mods-enabled/sql
 apt install -y git
-git clone https://github.com/wirisp/daloup.git
-\mv /root/daloup/sql /etc/freeradius/3.0/mods-available/sql
+
+git clone https://github.com/wirisp/Daloradius-Wireguard-Pihole-unbound.git dapiun
+\mv /root/dapiun/sql /etc/freeradius/3.0/mods-available/sql
 nano etc/freeradius/3.0/mods-enabled/sql
 
 chgrp -h freerad etc/freeradius/3.0/mods-available/sql
@@ -60,7 +59,7 @@ mysql -u root -p radius < contrib/db/fr2-mysql-daloradius-and-freeradius.sql
 mysql -u root -p radius < contrib/db/mysql-daloradius.sql
 cd ..
 sudo mv daloradius /var/www/html/
-\mv /root/daloup/daloradius.conf.php /var/www/html/daloradius/library/daloradius.conf.php
+\mv /root/dapiun/daloradius.conf.php /var/www/html/daloradius/library/daloradius.conf.php
 chown -R www-data:www-data /var/www/html/daloradius/
 chmod 664 /var/www/html/daloradius/library/daloradius.conf.php
 nano /var/www/html/daloradius/library/daloradius.conf.php
@@ -72,32 +71,34 @@ pear channel-update pear.php.net
 
 #wirisp Cambiar aqui===================================================
 #Este primero es importante y solo es para ubuntu/debian diferente de centos/almalinux contiene las variables de sistema
-\mv /root/daloup/radiusd.conf etc/freeradius/3.0/radiusd.conf
+\mv /root/dapiun/radiusd.conf etc/freeradius/3.0/radiusd.conf
 nano /etc/freeradius/3.0/radiusd.conf
-\mv /root/daloup/index.php /var/www/html/index.php
+\mv /root/dapiun/index.php /var/www/html/index.php
 
-\mv /root/daloup/default etc/freeradius/3.0/sites-enabled/default
+\mv /root/dapiun/default etc/freeradius/3.0/sites-enabled/default
 nano etc/freeradius/3.0/sites-enabled/default
 
-\mv /root/daloup/sqlcounter etc/freeradius/3.0/mods-available/sqlcounter
+\mv /root/dapiun/sqlcounter etc/freeradius/3.0/mods-available/sqlcounter
 #nano etc/freeradius/3.0/mods-available/sqlcounter
 
 
-\mv /root/daloup/access_period.conf /etc/freeradius/3.0/mods-config/sql/counter/mysql/access_period.conf
+\mv /root/dapiun/access_period.conf /etc/freeradius/3.0/mods-config/sql/counter/mysql/access_period.conf
 #nano /etc/freeradius/3.0/mods-config/sql/counter/mysql/access_period.conf
 
-\mv /root/daloup/quotalimit.conf /etc/freeradius/3.0/mods-config/sql/counter/mysql/quotalimit.conf
+\mv /root/dapiun/quotalimit.conf /etc/freeradius/3.0/mods-config/sql/counter/mysql/quotalimit.conf
 #nano /etc/freeradius/3.0/mods-config/sql/counter/mysql/quotalimit.conf
 
-# Cambiamos case sensitive=yes a no
-\mv /root/daloup/radutmp /etc/freeradius/3.0/mods-enabled/radutmp
-
 ##Aqui hay cambios que no se hicieron post-auth
-\mv /root/daloup/queries.conf /etc/freeradius/3.0/mods-config/sql/main/mysql/queries.conf
+\mv /root/dapiun/queries.conf /etc/freeradius/3.0/mods-config/sql/main/mysql/queries.conf
 nano /etc/freeradius/3.0/mods-config/sql/main/mysql/queries.conf
 
-cd daloup
-mysql -p -u root radius < /root/daloup/base.sql
+# Cambiamos case sensitive=yes a no
+\mv /root/dapiun/radutmp /etc/freeradius/3.0/mods-enabled/radutmp
+
+
+
+cd dapiun
+mysql -p -u root radius < /root/dapiun/base.sql
 
 systemctl status apache2
 systemctl stop freeradius
@@ -114,28 +115,24 @@ nano -l /var/www/html/daloradius/library/exten-radius_server_info.php
 chmod 777  /var/log/syslog
 chmod 777 /var/log/freeradius
 
+
+
+## Instalacion de Wireguard
+
 git clone https://github.com/wirisp/pihole-wireguard.git
 cd pihole-wireguard/
 ls
 mv piwire.sh /root
 cd
-ls
 chmod +x *.sh
 bash piwire.sh 
-enable_ipv6
-bash piwire.sh 
+
 wg-quick down wg0
 systemctl restart wg-quick@wg0.service
 systemctl status wg-quick@wg0.service
-reboot
-systemctl status wg-quick@wg0.service
-ls
-cd pihole-wireguard/
-chmod +x *.sh
-./unbound.sh
-cd
-ls
-./piwire.sh 
+
+### Instalacion de Pihole en debian 11
+
 systemctl stop wg-quick@wg0.service
 wg-quick down wg0
 curl -sSL https://install.pi-hole.net | bash
@@ -144,17 +141,121 @@ curl -sSL https://install.pi-hole.net | PIHOLE_SKIP_OS_CHECK=true bash
 PIHOLE_SKIP_OS_CHECK=true sudo -E pihole -a -p
 systemctl start wg-quick@wg0.service
 systemctl status wg-quick@wg0.service
+
+### Instalacion de unbound debian 11
+
 cd pihole-wireguard/
-ls
+chmod +x *.sh
 ./unbound.sh 
 
-systemctl enable pihole-FTL
 
 nano /etc/pihole/setupVars.conf 
+```
+PIHOLE_INTERFACE=wg0
+QUERY_LOGGING=true
+INSTALL_WEB_SERVER=true
+INSTALL_WEB_INTERFACE=true
+LIGHTTPD_ENABLED=true
+CACHE_SIZE=10000
+DNS_FQDN_REQUIRED=true
+DNS_BOGUS_PRIV=true
+DNSMASQ_LISTENING=single
+WEBPASSWORD=a31c87c18e9ff2eca7edb3aa0f7ee8ec24e92157a6f55d873115fd4084c37b0c
+BLOCKING_ENABLED=true
+PIHOLE_DNS_1=127.0.0.1#5335
+PIHOLE_DNS_2=127.0.0.1#5335
+DNSSEC=false
+REV_SERVER=false
 
-mysql -p -u root radius < /root/daloup/base.sql
+```
+systemctl enable pihole-FTL
 
-apt-get install wget curl net-tools gamin
+
 reboot
 
+
+#################################################################################################### fin
 zip -r freeradius.zip freeradius
+
+
+posibles
+
+sudo ufw allow WWW
+sudo ufw allow to any port 1812 proto udp
+sudo ufw allow to any port 1813 proto udp
+
+
+
+=====================================================error apache2
+systemctl disable lighttpd
+
+======================aqui esta el sitio = server block apache2
+nano /etc/apache2/sites-available/daloradius.conf
+```
+Alias /daloradius "/var/www/html/daloradius/"
+
+<Directory /var/www/html/daloradius/>
+ Options None
+ Order allow,deny
+ allow from all
+ </Directory>
+ ```
+
+a2ensite daloradius
+a2ensite daloradius.conf
+service apache2 restart
+systemctl restart apache2.service
+cd /etc/apache2/sites-available
+
+=============server blovk nginx
+server {
+    listen 80;
+
+    root /var/www/html/radius;
+    index index.php index.html index.htm;
+
+    server_name radius.khophi.co;
+
+    location ~ .*\.php$ {
+        # What should I put in here
+        # or what shouldn't I?
+    }
+}
+#========================================https://totaldebug.uk/posts/install-freeradius-centos-7-with-daloradius-for-management/
+systemctl enable freeradius
+systemctl enable nginx
+systemctl enable mariadb
+systemctl enable php-fpm
+systemctl start mariadb
+
+
+/etc/php-fpm.d/www.conf
+
+```
+listen = /var/run/php-fpm/php-fpm.sock
+listen.owner = nobody
+listen.group = nobody
+user = nginx
+group = nginx
+```
+
+/etc/nginx/conf.d/default.conf
+
+```
+server {
+    ##other data here
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_pass unix:/var/run/php-fpm/php-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+```
+
+mv daloradius /usr/share/nginx/html
+
+chown -R nginx:nginx /usr/share/nginx/html/daloradius/
+chmod 664 /usr/share/nginx/html/daloradius/library/daloradius.conf.php
