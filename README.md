@@ -1,4 +1,10 @@
 #Wireguard+pihole+daloradius debian 11
+Se realiza la instalacion de Daloradius ,en conjunto con Pihole y unbound
+
+- [x] Daloradius
+- [x] Pihole
+- [x] Unbound
+
 #Activar ipv6 en contabo
 enable_ipv6
 nano /etc/ssh/sshd_config
