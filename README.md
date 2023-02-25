@@ -1,7 +1,8 @@
-# Wireguard+pihole+daloradius debian 11
+# Daloradius+wireguard+pihole+unbound en  debian 11
 Se realiza la instalacion de Daloradius ,en conjunto con Pihole y unbound :shipit:
 
 - [x] Daloradius
+- [x] Wireguard
 - [x] Pihole
 - [x] Unbound
 
