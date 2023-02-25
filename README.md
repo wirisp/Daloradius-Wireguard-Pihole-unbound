@@ -278,3 +278,11 @@ _Reiniciamos_
 ```
 reboot
 ```
+### backup db
+```
+mysqldump -p -u root radius > dbname.sql
+```
+### Restaurar db
+```
+mysql -p -u root radius < dbname.sql
+```
