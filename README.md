@@ -234,6 +234,7 @@ curl -sSL https://install.pi-hole.net | PIHOLE_SKIP_OS_CHECK=true bash
 _Cambiamos el password con_
 ```
 PIHOLE_SKIP_OS_CHECK=true sudo -E pihole -a -p
+#pihole -a -p
 ```
 _Iniciamos los servicios con_
 ```
@@ -286,3 +287,9 @@ mysqldump -p -u root radius > dbname.sql
 ```
 mysql -p -u root radius < dbname.sql
 ```
+
+- Desinstalacion de pihole
+```
+pihole uninstall
+```
+
