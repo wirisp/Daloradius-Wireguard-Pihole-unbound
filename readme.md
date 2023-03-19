@@ -212,7 +212,7 @@ touch /tmp/daloradius.log
 ```
 reboot
 ```
-- Ingresar a daloradius por la direccion `http://IP/daloradius` con usuario `administrator` y clave `radius`
+- Ingresar a daloradius por la direccion `http://IP/daloradius` con usuario `administrator` y clave `radius` o `84Uniq@`
 _Si hay error de puertos Es necesario que se abran los puertos en el vps de administracion 1812,1813,3306,6813,80,8080,443_
 
 ## Instalacion de WIREGUARD
