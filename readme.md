@@ -328,4 +328,38 @@ mysql -p -u root radius < dbname.sql
 ```
 pihole uninstall
 ```
+## Crear web php para impresion de vouchers online
+ Para poder imprimir los vauchers de forma online sin herramientas, solamente clonaremos un repositorio y modificaremos los datos de acceso de nuestro servidor a la base de datos.
+- Clonamos el repositorio 
+```
+git clone https://github.com/wirisp/printdalo.git print
+mv print /var/www/html
+```
+- Seguimos el tutorial para modificar el acceso a la base de datos, si haz seguido esta instalacion solo modifica en
+```
+nano /var/www/html/print/index.php
+```
+- en la linea 35 cambia los datos
+```
+ $con = mysqli_connect("localhost","radius","84Uniq@","radius");
+ ```
+ - ***localhost** servidor
+ - ***radius*** usuario de la base de datos
+ - ***84Uniq@*** Password de la base de datos
+ - ***radius*** nombre de la base de datos
+ 
+ Tambien en este archivo puedes filtrar para impresion como desees, yo lo he echo con `batch_name` lo cual filtra por lote, pero igual podrias usar; `id` ,`username` etc, esto en la linea 40.
+```
+$query = "SELECT * FROM radius.fichas WHERE CONCAT(batch_name) LIKE '%$filtervalues%'";
+```
+
+### Impresion de vouchers desde online
+Podemos imprimir los vouchers creados pero solamente para aquellos que fueron creados como lote, para ello necesitamos el nombre de lote
+
+- Crear lote de vouchers en `http://IP/daloradius/mng-batch.php`
+- rear lote de vouchers en `http://IP/daloradius/mng-batch.php`
+- Copiar el nombre del lote, por si lo olvidaste, se encuentra listado en `http://IP/daloradius/mng-batch-list.php`
+- Ir al apartado de impresion de vouchers `https://IP/print`
+- Introducir el lote y darle en filtrar.
+
 
