@@ -122,7 +122,7 @@ systemctl restart freeradius
 apt -y install wget zip unzip
 ```
 ```
-git clone https://github.com/wirisp/daloradius.git
+git clone https://github.com/wirisp/daloradius-almalinux8.git daloradius
 cd daloradius
 ```
 ```
