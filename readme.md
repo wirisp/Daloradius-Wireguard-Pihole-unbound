@@ -1,103 +1,72 @@
-#Instalacion en ubuntu server
-```
-sudo nano /etc/cloud/cloud.cfg
-```
-Cambiar alli a
-```
-users:
-  - default
-  - root
+# Daloradius+wireguard+pihole+unbound en  debian 11
+Se realiza la instalacion de Daloradius ,en conjunto con Pihole y unbound :shipit:
 
-disable_root: false
-ssh_pwauth:   true
-```
+- [x] Daloradius
+- [x] Wireguard
+- [x] Pihole
+- [x] Unbound
 
-despues editar
+## Clave ssh, cambio de puerto e ingreso por clave
+- Actualizamos el sistema
+```
+apt -y update && apt -y upgrade
+```
+- Editamos el archivo
 ```
 nano /etc/ssh/sshd_config
 ```
-
-y colocar
+- Dentro del archivo anterior colocamos el puerto y checamos que se encuentre sin almoadillas (#) lo demas
 ```
 Port 6813 
 PermitRootLogin yes
 PasswordAuthentication yes
 ```
-
-Para el password del root
+- Reinicamos el servicio con
 ```
-sudo su
-passwd root
-# 84River@B
+systemctl restart sshd
 ```
-En los permisos de firewall
+_A partir de ahora el puerto ya no sera 22 si no el 6813_
+- Creamos una carpeta para la clave ssh y la editamos
 ```
-sudo ufw allow ssh
-sudo ufw allow 6813/tcp
-```
-
-Reiniciamos servicios
-```
-sudo service ssh restart
-sudo systemctl restart ssh
-```
-
-Abrir el puerto 6813 en la admin del servidor
-```
-#ssh -p 6813 root@0.0.0.0
-cd .ssh
+mkdir .ssh && cd .ssh
 nano authorized_keys
 ```
-
-Eliminar todo antes de ssh-rsa 
+_Dentro de ella colocamos nuestra ssh, si no usaras ssh simplemente cierralo y pasa al siguiente paso_
+- Le colocamos permisos al archivo y a la carpeta
+chmod 600 ~/.ssh/authorized_keys && chmod 700 ~/.ssh/
+# Instalacion de freeradius
+- Instalamos algunos paquetes necesarios
 ```
-# Si se cuelga apt, buscar el pid de root
-#ps aux | grep -i apt
-#kill PID
-#Salir  y volver a entrar
+apt -y install software-properties-common gnupg2 dirmngr
 ```
-
-# Instalacion
+- Agregamos claves y repositorios de Mariadb
 ```
-apt update
+apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
 ```
 ```
-apt -y install apache2
-ufw allow Apache
-systemctl enable --now apache2
+add-apt-repository 'deb [arch=amd64,arm64,ppc64el] https://mirror.rackspace.com/mariadb/repo/10.5/debian bullseye main'
 ```
-
+- Actualizamos el sistema o repositorio
 ```
-apt -y install php libapache2-mod-php php-{gd,common,mail,mail-mime,mysql,pear,db,mbstring,xml,curl}
+apt -y update
 ```
-
+- Instalamos los paquetes necesarios de mariadb
 ```
-apt -y install mariadb-server php-pear
+apt install mariadb-server mysqltuner -y
 ```
-
+- Iniciamos el servicio de mariadb
 ```
-sudo pear install DB
-sudo pear install MDB2
-pear channel-update pear.php.net
+systemctl start mysql.service
 ```
-
+- Preparamos la base de datos
 ```
 mysql_secure_installation
-# Enter
+# enter
 # Disallow root login remotely? [Y/n] n
 # password usada aqui es 84Uniq@
 ```
-
-```
-apt -y install freeradius freeradius-mysql freeradius-utils
-systemctl enable --now freeradius.service 
-```
-
-```
-sudo ufw allow to any port 1812 proto udp
-sudo ufw allow to any port 1813 proto udp
-```
-
+_Si nos pregunta desactivar conexiones remotas colocar n_
+- Creamos una base de datos
 ```
 mysql -u root -p
 CREATE DATABASE radius;
@@ -105,101 +74,258 @@ GRANT ALL ON radius.* TO radius@localhost IDENTIFIED BY "84Uniq@";
 FLUSH PRIVILEGES;
 quit;
 ```
-
+- Instalacion de apache server
+```
+apt -y install apache2
+```
+```
+apt -y install php libapache2-mod-php php-{gd,common,mail,mail-mime,mysql,pear,mbstring,xml,curl}
+```
+- Instalamos freeradius
+```
+apt -y install freeradius freeradius-mysql freeradius-utils
+```
+```
+systemctl enable --now freeradius.service
+```
+- Enviamos el schema de la base de datos
 ```
 mysql -u root -p radius < /etc/freeradius/3.0/mods-config/sql/main/mysql/schema.sql
-sudo ln -s /etc/freeradius/3.0/mods-available/sql /etc/freeradius/3.0/mods-enabled/
 ```
-
+- Instalamos git y clonamos un repositorio
 ```
-apt install git
-git clone https://github.com/wirisp/daloup.git
+apt install -y git
 ```
-
-
-Remplazamos el archivo sql , cambiale la contraseña usada password= 84Uniq@ por la tuya
 ```
-\mv /root/daloup/ubuntu/sql /etc/freeradius/3.0/mods-available/sql
-nano /etc/freeradius/*/mods-enabled/sql
+git clone https://github.com/wirisp/Daloradius-Wireguard-Pihole-unbound.git dapiun
 ```
-
+- Movemos ciertos archivos, podemos ir checando su conetenido por si debemos cambiar algo en ellos
 ```
-sudo chgrp -h freerad /etc/freeradius/3.0/mods-available/sql
-sudo chown -R freerad:freerad /etc/freeradius/3.0/mods-enabled/sql
-sudo systemctl restart freeradius.service
+\mv /root/dapiun/sql /etc/freeradius/3.0/mods-available/sql
+nano /etc/freeradius/3.0/mods-available/sql
 ```
-
+```
+ln -s /etc/freeradius/3.0/mods-available/sql /etc/freeradius/3.0/mods-enabled/
+nano /etc/freeradius/3.0/mods-enabled/sql
+```
+```
+chgrp -h freerad /etc/freeradius/3.0/mods-available/sql
+chown -R freerad:freerad /etc/freeradius/3.0/mods-enabled/sql
+```
+- Reiniciamos freeradius
+```
+systemctl restart freeradius
+```
+## Instalacion de Daloradius
+- Instalamos zip y unzip
+```
+apt -y install wget zip unzip
+```
 ```
 git clone https://github.com/wirisp/daloradius.git
 cd daloradius
+```
+```
 mysql -u root -p radius < contrib/db/fr2-mysql-daloradius-and-freeradius.sql
 mysql -u root -p radius < contrib/db/mysql-daloradius.sql
 ```
-
+- Regresammos a la carpeta con
 ```
 cd ..
-mv daloradius /var/www/html/
-\mv /root/daloup/ubuntu/daloradius.conf.php /var/www/html/daloradius/library/daloradius.conf.php
-#Cambiar contrase;a
+```
+- Movemos la carpeta daloradius a html del servidor
+```
+\mv daloradius /var/www/html/
+```
+- Movemos algunos archivos del github clonado
+```
+\mv /root/dapiun/daloradius.conf.php /var/www/html/daloradius/library/daloradius.conf.php
 nano /var/www/html/daloradius/library/daloradius.conf.php
 ```
-
 ```
-sudo chown -R www-data:www-data /var/www/html/daloradius/
-sudo chmod 664 /var/www/html/daloradius/library/daloradius.conf.php
+chown -R www-data:www-data /var/www/html/daloradius/
+chmod 664 /var/www/html/daloradius/library/daloradius.conf.php
 ```
-
 ```
-sudo systemctl restart freeradius.service apache2
+systemctl restart freeradius.service apache2
 ```
-
 ```
 timedatectl set-timezone America/Mexico_City
 ```
+- Instalamos pear
+```
+pear install DB
+pear install MDB2
+pear channel-update pear.php.net
+```
+- Copiamos los siguientes archivos
+```
+mv /root/dapiun/radiusd.conf /etc/freeradius/3.0/radiusd.conf
+nano /etc/freeradius/3.0/radiusd.conf
+```
 
 ```
-apt install php-dba
+\mv /root/dapiun/index.php /var/www/html/index.php
+```
+
+- Seguimos copiando archivos
+```
+\mv /root/dapiun/default /etc/freeradius/3.0/sites-enabled/default
+nano /etc/freeradius/3.0/sites-enabled/default
 ```
 
 ```
-touch /var/log/freeradius/radius.log
-touch /var/log/messages
-touch /tmp/daloradius.log
+\mv /root/dapiun/sqlcounter /etc/freeradius/3.0/mods-available/sqlcounter
+\mv /root/dapiun/access_period.conf /etc/freeradius/3.0/mods-config/sql/counter/mysql/access_period.conf
+\mv /root/dapiun/quotalimit.conf /etc/freeradius/3.0/mods-config/sql/counter/mysql/quotalimit.conf
+\mv /root/dapiun/queries.conf /etc/freeradius/3.0/mods-config/sql/main/mysql/queries.conf
+\mv /root/dapiun/radutmp /etc/freeradius/3.0/mods-enabled/radutmp
 ```
-
+- Restauramos alguna base de datos de ejemplo con perfiles
 ```
-chmod 755 /var/log/freeradius
-chmod 644 /var/log/freeradius/radius.log
+mysql -p -u root radius < /root/dbname.sql
+```
+- reiniciamos los servicios
+```
+systemctl status apache2
+systemctl status freeradius
+```
+- Cambiar en el siguiente archivo unas lineas donde dice mysql por Mariadb
+```
+nano -l /var/www/html/daloradius/library/exten-radius_server_info.php
+```
+_Cambiar a:_
+```
+<td class='summaryKey'> MariaDB </td> <td class='summaryValue'><span class='sleft'><?php echo check_service("mariadb");  ?></span> </td>
+```
+- Darlepermisos a carpetas log
+```
+chmod 777  /var/log/syslog
+chmod 777 /var/log/freeradius
+chmod 755 /var/log/radius/
+chmod 644 /var/log/radius/radius.log
 chmod 644 /var/log/messages
+chmod 644 /var/log/dmesg
 touch /tmp/daloradius.log
 ```
+- Reiniciar sistema e ingresar
+```
+reboot
+```
+- Ingresar a daloradius por la direccion `http://IP/daloradius` con usuario `administrator` y clave `radius`
+_Si hay error de puertos Es necesario que se abran los puertos en el vps de administracion 1812,1813,3306,6813,80,8080,443_
 
+## Instalacion de WIREGUARD
 ```
-#cambio directorio 
-\mv /root/daloup/ubuntu/ubunturadiusd.conf /etc/freeradius/3.0/radiusd.conf
-\mv /root/daloup/ubuntu/default /etc/freeradius/3.0/sites-enabled/default
-\mv /root/daloup/ubuntu/sqlcounter /etc/freeradius/3.0/mods-available/sqlcounter
-\mv /root/daloup/ubuntu/access_period.conf /etc/freeradius/3.0/mods-config/sql/counter/mysql/access_period.conf
-\mv /root/daloup/ubuntu/quotalimit.conf /etc/freeradius/3.0/mods-config/sql/counter/mysql/quotalimit.conf
-\mv /root/daloup/ubuntu/radutmp /etc/freeradius/3.0/mods-enabled/radutmp
-\mv /root/daloup/ubuntu/queries.conf /etc/freeradius/3.0/mods-config/sql/main/mysql/queries.conf
-```
-
-```
-\mv /root/daloup/ubuntu/index.php /var/www/html/index.php
-```
-
-```
-cd daloup
-mysql -p -u root radius < /root/daloup/ubuntu/base.sql
+git clone https://github.com/wirisp/pihole-wireguard.git
+cd pihole-wireguard/
+ls
+mv piwire.sh /root
+cd
+chmod +x *.sh
+bash piwire.sh 
 ```
 
-sudo nano -l /var/www/html/daloradius/library/exten-radius_server_info.php
+```
+nano /etc/sysctl.conf
+```
 
-from:
+```
+net.ipv6.conf.all.disable_ipv6 = 0
+kernel.panic = 10
+```
+```
+sysctl -p
+```
+```
+systemctl stop wg-quick@wg0.service
+wg-quick down wg0
+systemctl restart wg-quick@wg0.service
+systemctl status wg-quick@wg0.service
+```
+- Si causa error el ping entonces cambiar dns con nano /etc/resolv.conf
+```
+ping google.com
+```
+```
+nano /etc/resolv.conf
+```
+- agregar
+```
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+```
+- Reiniciamos con
+```
+service resolvconf restart
+```
+## instacion de  PIHOLE
+```
+curl -sSL https://install.pi-hole.net | bash
+```
+_Seleccionar interfaz wg0_
 
-<td class='summaryKey'> MySQL </td> <td class='summaryValue'><span class='sleft'><?php echo check_service("mysql"); ?></span> </td>
+```
+systemctl enable pihole-FTL
+systemctl restart wg-quick@wg0.service
+pihole -a -p
+```
+```
+#curl -sSL https://install.pi-hole.net | bash
+#curl -sSL https://install.pi-hole.net | PIHOLE_SKIP_OS_CHECK=true bash
+```
+## instalacion UNBOUND
+```
+cd pihole-wireguard/
+chmod +x *.sh
+./unbound.sh 
+```
 
-to:
+```
+> /etc/pihole/setupVars.conf
+```
+```
+echo "PIHOLE_INTERFACE=wg0
+QUERY_LOGGING=true
+INSTALL_WEB_SERVER=true
+INSTALL_WEB_INTERFACE=true
+LIGHTTPD_ENABLED=true
+CACHE_SIZE=10000
+DNS_FQDN_REQUIRED=true
+DNS_BOGUS_PRIV=true
+DNSMASQ_LISTENING=single
+WEBPASSWORD=a31c87c18e9ff2eca7edb3aa0f7ee8ec24e92157a6f55d873115fd4084c37b0c
+BLOCKING_ENABLED=true
+DNSSEC=false
+REV_SERVER=false
+PIHOLE_DNS_1=127.0.0.1#5335
+PIHOLE_DNS_2=127.0.0.1#5335" >> /etc/pihole/setupVars.conf 
+```
+```
+systemctl enable pihole-FTL
+```
+```
+reboot
+```
+```
+systemctl restart wg-quick@wg0.service
+systemctl status wg-quick@wg0.service
+ip link show
+```
 
-<td class='summaryKey'> MariaDB </td> <td class='summaryValue'><span class='sleft'><?php echo check_service("mariadb"); ?></span> </td>
+
+
+- Restaldo de la db
+```
+mysqldump -p -u root radius > dbname.sql
+```
+- Restaurar db
+```
+mysql -p -u root radius < dbname.sql
+```
+
+- Desinstalacion de pihole
+```
+pihole uninstall
+```
+
