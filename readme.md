@@ -362,4 +362,11 @@ Podemos imprimir los vouchers creados pero solamente para aquellos que fueron cr
 - Ir al apartado de impresion de vouchers `https://IP/print`
 - Introducir el lote y darle en filtrar.
 
+### Errores y soluciones posibles
+- Reparar base de datos
 
+```
+mysql -u -p root radius
+
+REPAIR TABLE TABLE;
+```
