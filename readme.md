@@ -104,10 +104,16 @@ git clone https://github.com/wirisp/Daloradius-Wireguard-Pihole-unbound.git dapi
 \mv /root/dapiun/sql /etc/freeradius/3.0/mods-available/sql
 nano /etc/freeradius/3.0/mods-available/sql
 ```
+
+```
+\mv /root/dapiun/eap /etc/freeradius/3.0/mods-available/eap
+```
+
 ```
 ln -s /etc/freeradius/3.0/mods-available/sql /etc/freeradius/3.0/mods-enabled/
 nano /etc/freeradius/3.0/mods-enabled/sql
 ```
+
 ```
 chgrp -h freerad /etc/freeradius/3.0/mods-available/sql
 chown -R freerad:freerad /etc/freeradius/3.0/mods-enabled/sql
