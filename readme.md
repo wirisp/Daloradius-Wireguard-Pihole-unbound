@@ -187,10 +187,15 @@ nano /etc/freeradius/3.0/sites-enabled/default
 \mv /root/dapiun/queries.conf /etc/freeradius/3.0/mods-config/sql/main/mysql/queries.conf
 \mv /root/dapiun/radutmp /etc/freeradius/3.0/mods-enabled/radutmp
 ```
-- Restauramos alguna base de datos de ejemplo con perfiles
+- Descargamos alguna base de datos de ejemplo con perfiles
+```
+wget https://raw.githubusercontent.com/wirisp/daloup/main/dbname.sql -O dbname.sql
+```
+- La restauramos con:
 ```
 mysql -p -u root radius < /root/dbname.sql
 ```
+- Ponle el password de tu db radius `84Uniq@`
 - reiniciamos los servicios
 ```
 systemctl status apache2
