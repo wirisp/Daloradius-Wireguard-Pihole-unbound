@@ -381,3 +381,7 @@ mysql -u -p root radius
 
 REPAIR TABLE TABLE;
 ```
+## Buscar dentro de servidor
+```
+grep -rl "8.8.8.8" /etc
+```
